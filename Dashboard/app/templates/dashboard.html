@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    
+    <link rel="icon" href="{{ url_for('static', filename='dashboard_logo.ico') }}" type="image/png">
+  
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  </head>
+<body> 
+  <!-- Navbar (Menu to select a Sensor)-->
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bolder" href="#">Dashboard de Sensores</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul id="sensor-list" class="navbar-nav me-auto mb-2 mb-lg-0">          
+          <li class="nav-item">
+            <a class="nav-link disabled" aria-disabled="true">Gargando sensores...</a>
+          </li>
+        </ul>
+        <div class="d-flex" role="Add">
+          <button id="addDataBtn" class="btn btn-outline-primary" onclick="toggleForm()">Añadir datos</button>          
+        </div>
+      </div>
+    </div>
+  </nav>
+  <!-- Main Content (Sensor Content)-->
+  <main class="container">
+    <div id="div-sensor-name-h" class="m-4 py-4 container text-center">
+      <span id="sensor-name-h" class="fs-1 fst-italic fw-bolder">...</span>
+    </div>
+    <div id="div-sensor-name-dropdown" class="m-4 container text-center">
+      <button id="sensor-name-dropdown" class="btn btn-lg dropdown-toggle text-center fs-1 fst-italic fw-bolder" data-bs-toggle="dropdown" aria-expanded="false">
+        ... 
+      </button>
+      <!-- Sensor Options -->
+      <ul class="dropdown-menu dropdown-menu-end fs-3">
+        <li><a class="dropdown-item fst-italic" href="#">Alarma del sensor:</a></li>
+        <li>
+          <!-- Turn ON/OFF the sensor Alarm -->
+          <form id="sensorAlarmForm" action="/send" method="POST">
+            <div class="container">
+              <button type="submit" name="action" value="ON" class="btn btn-success">
+                Encender
+              </button>
+              <button type="submit" name="action" value="OFF" class="btn btn-danger">
+                Apagar
+              </button>
+            </div>
+          </form>
+        </li>
+        {% if message %}
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#">{{ message }}</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    <!-- Form to Add data manualy to the sensors-->
+    <div id="addDataForm" class="container" style="display: none;">
+      <div class="d-flex flex-row-reverse">
+        <button id="closeFormBtn" type="button" class="btn-close" aria-label="Close" onclick="toggleForm()"></button>
+      </div>        
+      <form id="dataForm" onsubmit="submitData(event)">
+        <label for="sensorSelect">Selecciona el sensor:</label>
+        <select class="form-select" id="sensorSelect" name="sensor_topic" onchange="updateFormFields()"></select>
+
+        <label for="temperatureInput">Temperatura (°C):</label>
+        <input id="temperatureInput" class="form-control" name="temperature" type="number" step="0.01"  required>
+
+        <label for="humidityInput">Humedad (%):</label>
+        <input id="humidityInput" name="humidity" class="form-control" type="number" step="0.01"  required>
+
+        <div id="batteryField" style="display: none;">
+          <label for="batteryInput">Batería (%):</label>
+          <input id="batteryInput" name="battery" class="form-control" type="number" step="0.01" >
+        </div>
+        <div class="container text-center">
+          <button class="btn btn-primary" type="submit">Añadir datos</button>
+        </div>
+      </form>
+    </div>
+    <!-- Text boxes to display current data -->
+    <div class="container text-center">
+      <div class="row">
+        <span id="span-current-temperature" class="my-1 col-sm-12 col-md-4 col-lg-4">
+          <div id="current-temperature" class="py-4 border border-1 rounded fw-bolder">
+            Temperatura: --
+          </div>
+        </span>
+        <span id="span-current-humidity" class="my-1 col-sm-12 col-md-4 col-lg-4">
+          <div id="current-humidity" class="py-4 border border-1 rounded fw-bolder">
+            Humedad: --
+          </div>
+        </span>
+        <span id="span-current-battery" class="my-1 col-sm-12 col-md-4 col-lg-4" style="display: none;">
+          <div id="current-battery" class="py-4 border border-1 rounded fw-bolder" style="display: none;" >
+            Batería: --
+          </div>
+        </span>
+      </div>
+    </div>
+    <div class="container">
+      <!-- Temperature Alarm -->
+      <div id="temp_alarm" class="container text-center text-warning-emphasis my-2 py-2 border border-1 border-warning rounded" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-exclamation-triangle" viewBox="0 0 16 16">
+          <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
+          <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+        </svg>
+        <span class="pt-2">
+          !!Alerta!! Temperatura del sensor elevada.
+        </span>
+      </div>
+      <!-- Graphics -->
+      <div class="container my-3 border border-1 rounded fs-2 fw-bolder">
+        <canvas id="temperatureChart" width="400" height="200"></canvas>
+      </div>
+      <div class="container my-3 border border-1 rounded fs-2 fw-bolder">
+        <canvas id="humidityChart" width="400" height="200"></canvas>
+      </div>
+      <div id="batteryChart_div" class="">
+        <canvas id="batteryChart" style="display: none;" width="400" height="200"></canvas>
+      </div>
+    </div>
+    <!-- Data Table -->
+    <div class="container mt-4">
+      <h2>Datos del Sensor</h2>
+      <table id="sensor-data-table" class="table table-light table-striped">
+        <thead>
+          <tr>
+            <th scope="col">Fecha y Hora</th>
+            <th scope="col">Humedad (%)</th>
+            <th scope="col">Temperatura (°C)</th>
+            <!-- <th scope="col">Batería (%)</th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows will be generated dynamically with JavaScript -->
+        </tbody>
+      </table>
+    </div>
+    <!-- Buttons to display more data in the table -->
+    <div id="pagination-controls" class="d-flex justify-content-center mt-3">
+      <button id="show-less" class="btn btn-primary mx-2 pagination-button">Anterior</button>
+      <span id="data-range" class="pagination-text">1-10</span>
+      <button id="show-more" class="btn btn-primary mx-2 pagination-button">Siguiente</button>
+    </div>
+  </main>
+  <br><br>
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; Proyecto realizado por Oscar Ocheda Gimenez y Enrique Machí Hervàs <br> para la asignatura Redes Inalámbricas de Sensores y Actuadores.</p>
+    <p>
+        <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Política de privacidad</a> | 
+        <a href="https://www.youtube.com/shorts/RWSH3py72O0" target="_blank">Términos de uso</a> | 
+        <a href="https://www.upv.es/" target="_blank">UPV</a>
+    </p>
+    </footer>
+  <!-- Javascript -->
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
