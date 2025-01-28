@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Proyecto Heri-Sure: Dashboard IoT con Flask
 
 Este proyecto desarrolla un sistema IoT para monitorizar en tiempo real datos de sensores que miden temperatura y humedad, utilizando el módulo **RAK3172** y la plataforma **The Things Network (TTN)**. Incluye un **dashboard web interactivo** para la visualización y control remoto de alarmas.
@@ -46,3 +47,7 @@ dashboard/
 ├── config.py                        # Configuración de la aplicación
 ├── run.py                           # Punto de entrada de la aplicación
 └── requirements.txt                 # Dependencias del proyecto
+=======
+# proyecto-heri-sure-enrique-oscar
+Este proyecto desarrolla un sistema IoT para monitorizar en tiempo real datos de sensores que miden temperatura y humedad, utilizando el módulo **RAK3172** y la plataforma **The Things Network (TTN)**. Incluye un **dashboard web interactivo** para la visualización y control remoto de alarmas.
+>>>>>>> 45a74ffb3e0ab66e11e1cd4c79657d404582f5fa
