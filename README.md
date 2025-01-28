@@ -24,7 +24,7 @@ El sistema consta de:
 - **Bootstrap**: Diseño responsivo del frontend.
 - **Chart.js**: Visualización de gráficos interactivos en el dashboard.
 
-## 📂 Estructura del Proyecto
+## 📂 Estructura del Dashboard
 ```plaintext
 dashboard/
 │
